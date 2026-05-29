@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arken">
+<title>Arken</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --navy: #0a0e1a;
+  --navy2: #0f1628;
+  --navy3: #141c35;
+  --navy4: #1a2347;
+  --accent: #7b9fd4;
+  --accent2: #c3a96a;
+  --text: #e8eaf2;
+  --text-muted: #7a8aaa;
+  --border: rgba(123,159,212,0.18);
+  --border2: rgba(123,159,212,0.35);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html, body {
+  height: 100%; width: 100%;
+  background: var(--navy);
+  color: var(--text);
+  font-family: 'Lato', sans-serif;
+  overflow: hidden;
+}
+canvas#stars {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+}
+
+/* ── LAYOUT ── */
+#app {
+  position: relative; z-index: 1;
+  display: flex; height: 100vh; height: 100dvh;
+}
+
+/* Desktop: sidebar left */
+#sidebar {
+  width: 230px; min-width: 230px;
+  background: var(--navy2);
+  border-right: 0.5px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+#main {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  min-width: 0;
+}
+#main::-webkit-scrollbar { width: 4px; }
+#main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* Mobile: bottom tab bar */
+#bottombar { display: none; }
+
+@media (max-width: 640px) {
+  #app { flex-direction: column; }
+
+  #sidebar { display: none; }
+
+  #main {
+    flex: 1;
+    padding-bottom: calc(62px + var(--safe-bottom));
+  }
+
+  #bottombar {
+    display: flex;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    background: var(--navy2);
+    border-top: 0.5px solid var(--border);
+    padding-bottom: var(--safe-bottom);
+    height: calc(62px + var(--safe-bottom));
+    align-items: flex-start;
+    justify-content: space-around;
+  }
+
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 10px 4px 4px;
+    cursor: pointer; font-size: 10px;
+    color: var(--text-muted);
+    transition: color .15s;
+    gap: 4px;
+    font-family: 'Lato', sans-serif;
+    border: none; background: none;
+    min-height: 52px;
+  }
+  .tab-item.active { color: var(--accent); }
+  .tab-icon { font-size: 20px; line-height: 1; }
+
+  .view { padding: 18px 16px; }
+
+  .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+
+  .view-header { margin-bottom: 16px; padding-bottom: 12px; }
+  .view-title { font-size: 17px; }
+
+  .person-name-display { font-size: 21px; }
+
+  .actions-row { flex-wrap: wrap; }
+  .actions-row .btn { flex: 1; text-align: center; }
+  .actions-row .btn-danger { flex: none; margin-left: 0 !important; width: 100%; margin-top: 6px; }
+
+  .two-col { grid-template-columns: 1fr !important; }
+
+  .tl-year-label { padding-left: 70px; }
+  .tl-line { left: 62px; }
+  .tl-date-col { width: 56px; min-width: 56px; }
+}
+
+/* ── LOGO / NAV (desktop) ── */
+#logo {
+  padding: 20px 18px 15px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+#logo-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--navy); border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden; position: relative;
+}
+#logo-icon svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#logo-text { font-family: 'Libre Baskerville', serif; font-size: 17px; letter-spacing: .1em; color: var(--text); }
+
+.nav-section { padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+.nav-section-title {
+  font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--text-muted); padding: 4px 18px 5px; font-family: 'Lato', sans-serif;
+}
+.nav-item {
+  padding: 9px 18px; cursor: pointer; font-size: 13px;
+  color: var(--text-muted); transition: all .15s;
+  border-left: 2px solid transparent;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: 'Lato', sans-serif; user-select: none;
+}
+.nav-item:hover { color: var(--text); background: rgba(123,159,212,0.06); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(123,159,212,0.08); }
+.badge { font-size: 11px; color: var(--text-muted); background: rgba(123,159,212,0.1); padding: 1px 7px; border-radius: 10px; }
+
+/* ── VIEWS ── */
+.view { display: none; padding: 24px 28px; }
+.view.active { display: block; }
+
+.view-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; padding-bottom: 14px;
+  border-bottom: 0.5px solid var(--border);
+}
+.view-title { font-family: 'Libre Baskerville', serif; font-size: 19px; font-weight: 400; color: var(--text); }
+
+/* ── BUTTONS ── */
+.btn {
+  background: rgba(123,159,212,0.12); border: 0.5px solid var(--border2);
+  color: var(--accent); padding: 8px 15px; border-radius: 6px;
+  cursor: pointer; font-size: 13px; font-family: 'Lato', sans-serif; transition: all .15s;
+  white-space: nowrap;
+}
+.btn:hover, .btn:active { background: rgba(123,159,212,0.22); }
+.btn-gold { color: var(--accent2); border-color: rgba(195,169,106,0.35); background: rgba(195,169,106,0.08); }
+.btn-gold:hover, .btn-gold:active { background: rgba(195,169,106,0.2); }
+.btn-danger { color: #e05c5c; border-color: rgba(224,92,92,0.3); background: rgba(224,92,92,0.08); }
+.btn-danger:hover, .btn-danger:active { background: rgba(224,92,92,0.2); }
+
+/* ── FORM ELEMENTS ── */
+input[type=text], input[type=number], textarea, select {
+  width: 100%; background: var(--navy3); border: 0.5px solid var(--border);
+  color: var(--text); padding: 10px 12px; border-radius: 6px;
+  font-size: 15px; font-family: 'Lato', sans-serif; outline: none;
+  transition: border-color .15s; -webkit-appearance: none; appearance: none;
+}
+input[type=text]:focus, input[type=number]:focus, textarea:focus, select:focus { border-color: var(--border2); }
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+select option { background: #141c35; }
+textarea { resize: vertical; min-height: 80px; }
+
+.field-group { margin-bottom: 14px; }
+.field-label { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--text-muted); margin-bottom: 6px; font-family: 'Lato', sans-serif; display: block; }
+
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; color: var(--text-muted); cursor: pointer;
+  margin-bottom: 18px; padding: 4px 0; border: none; background: none;
+  font-family: 'Lato', sans-serif; transition: color .15s;
+}
+.back-btn:hover { color: var(--accent); }
+
+.actions-row { display: flex; gap: 10px; margin-top: 22px; padding-top: 16px; border-top: 0.5px solid var(--border); }
+
+/* ── CARDS / GRID ── */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.card {
+  background: var(--navy3); border: 0.5px solid var(--border);
+  border-radius: 10px; padding: 14px; cursor: pointer; transition: all .15s;
+}
+.card:active { background: var(--navy4); border-color: var(--border2); }
+.card-num { font-size: 11px; color: var(--accent); margin-bottom: 3px; letter-spacing: .06em; }
+.card-name { font-size: 15px; color: var(--text); font-family: 'Libre Baskerville', serif; margin-bottom: 2px; }
+.card-sub { font-size: 12px; color: var(--text-muted); }
+
+/* ── PERSON DETAIL ── */
+.person-num { font-size: 12px; color: var(--accent); letter-spacing: .1em; margin-bottom: 5px; }
+.person-name-display { font-family: 'Libre Baskerville', serif; font-size: 24px; font-weight: 400; color: var(--text); margin-bottom: 20px; }
+.info-pair { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); font-size: 14px; }
+.info-pair:last-child { border-bottom: none; }
+.info-key { color: var(--text-muted); min-width: 120px; font-size: 12px; letter-spacing: .03em; flex-shrink: 0; }
+.info-val { color: var(--text); flex: 1; }
+.info-val .pill { display: inline-block; background: rgba(123,159,212,0.12); border: 0.5px solid var(--border); color: var(--accent); font-size: 12px; padding: 2px 8px; border-radius: 10px; margin: 2px 3px 2px 0; }
+
+/* ── TAGS ── */
+.tags-input-wrap {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  background: var(--navy3); border: 0.5px solid var(--border);
+  border-radius: 6px; padding: 7px 10px; min-height: 44px;
+  align-items: center; cursor: text;
+}
+.tags-input-wrap:focus-within { border-color: var(--border2); }
+.tag-pill { background: rgba(123,159,212,0.14); border: 0.5px solid var(--border2); color: var(--accent); padding: 3px 9px; border-radius: 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.tag-remove { cursor: pointer; font-size: 15px; line-height: 1; color: var(--text-muted); border: none; background: none; padding: 0; }
+.tags-input-wrap input { background: transparent; border: none; outline: none; color: var(--text); font-family: 'Lato', sans-serif; font-size: 14px; padding: 2px 4px; min-width: 80px; flex: 1; }
+
+/* ── TIMELINE ── */
+.timeline-wrap { position: relative; padding: 4px 0; }
+.tl-line { position: absolute; left: 72px; top: 0; bottom: 0; width: 1px; background: var(--border); }
+.tl-year-block { margin-bottom: 2px; }
+.tl-year-label { font-family: 'Libre Baskerville', serif; font-size: 13px; color: var(--accent2); opacity: .75; padding: 14px 0 4px 80px; }
+.tl-entry { display: flex; align-items: flex-start; margin-bottom: 1px; }
+.tl-date-col { width: 66px; min-width: 66px; font-size: 11px; color: var(--text-muted); padding-top: 11px; text-align: right; }
+.tl-dot-col { width: 15px; min-width: 15px; display: flex; justify-content: center; padding-top: 15px; position: relative; z-index: 2; }
+.tl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; border: 1px solid rgba(123,159,212,0.4); }
+.tl-content { flex: 1; padding: 6px 0 10px 14px; border-bottom: 0.5px solid rgba(123,159,212,0.07); min-width: 0; }
+.tl-name { font-size: 14px; color: var(--text); margin-bottom: 2px; word-break: break-word; }
+.tl-meta { font-size: 12px; color: var(--text-muted); }
+.tl-desc { font-size: 13px; color: var(--text-muted); margin-top: 3px; font-style: italic; font-family: 'Libre Baskerville', serif; }
+.tl-edit { display: inline-block; margin-top: 6px; font-size: 11px; color: var(--text-muted); cursor: pointer; border: 0.5px solid var(--border); padding: 3px 9px; border-radius: 4px; transition: all .15s; background: transparent; font-family: 'Lato', sans-serif; }
+.tl-edit:active { color: var(--accent); border-color: var(--border2); }
+
+.search-wrap { margin-bottom: 16px; }
+.empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 15px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<div id="app">
+
+  <!-- Desktop sidebar -->
+  <div id="sidebar">
+    <div id="logo">
+      <div id="logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+          <rect width="40" height="40" rx="9" fill="#07091a"/>
+          <ellipse cx="18" cy="22" rx="22" ry="16" fill="#0d1535" opacity="0.9"/>
+          <ellipse cx="26" cy="16" rx="18" ry="13" fill="#0e1840" opacity="0.8"/>
+          <ellipse cx="20" cy="28" rx="24" ry="11" fill="#0b1228" opacity="0.7"/>
+          <ellipse cx="19" cy="18" rx="12" ry="8" fill="#1a2a6c" opacity="0.35"/>
+          <circle cx="8" cy="7" r="0.9" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="15" cy="5" r="0.6" fill="rgba(220,230,255,0.75)"/>
+          <circle cx="24" cy="6" r="1.1" fill="rgba(255,255,255,0.9)"/>
+          <circle cx="32" cy="4" r="0.7" fill="rgba(200,215,255,0.7)"/>
+          <circle cx="35" cy="9" r="0.9" fill="rgba(255,255,255,0.8)"/>
+          <circle cx="6" cy="14" r="0.6" fill="rgba(220,230,255,0.6)"/>
+          <circle cx="36" cy="16" r="0.7" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="5" cy="26" r="0.7" fill="rgba(200,215,255,0.55)"/>
+          <circle cx="37" cy="28" r="0.6" fill="rgba(255,255,255,0.6)"/>
+          <circle cx="9" cy="34" r="0.8" fill="rgba(220,230,255,0.5)"/>
+          <circle cx="30" cy="35" r="0.7" fill="rgba(255,255,255,0.55)"/>
+          <text x="20" y="27" font-family="Georgia,serif" font-size="23" font-weight="400" fill="white" text-anchor="middle" opacity="0.97">A</text>
+        </svg>
+      </div>
+      <div id="logo-text">ARKEN</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Register</div>
+      <div class="nav-item active" data-view="persons" onclick="showList('persons')"><span>Personregister</span><span class="badge" id="badge-persons">0</span></div>
+      <div class="nav-item" data-view="jobs" onclick="showList('jobs')"><span>Yrkesregister</span><span class="badge" id="badge-jobs">0</span></div>
+      <div class="nav-item" data-view="floors" onclick="showList('floors')"><span>Etasjeregister</span><span class="badge" id="badge-floors">0</span></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Tidslinje</div>
+      <div class="nav-item" data-view="timeline" onclick="showList('timeline')"><span>Alle hendelser</span><span class="badge" id="badge-tl">0</span></div>
+      <div class="nav-item" onclick="showNewEventForm()"><span>+ Ny hendelse</span></div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div id="main">
+
+    <!-- PERSONS LIST -->
+    <div id="view-persons" class="view active">
+      <div class="view-header">
+        <div class="view-title">Personregister</div>
+        <button class="btn btn-gold" onclick="showPersonForm()">+ Ny person</button>
+      </div>
+      <div class="search-wrap"><input type="text" id="search-persons" placeholder="Søk…" oninput="renderPersonsList()"></div>
+      <div id="persons-grid" class="grid"></div>
+    </div>
+
+    <!-- PERSON FORM -->
+    <div id="view-person-form" class="view">
+      <button class="back-btn" onclick="showList('persons')">← Tilbake</button>
+      <div class="view-title" style="margin-bottom:18px;" id="form-title">Ny person</div>
+      <input type="hidden" id="f-id">
+      <div class="field-group"><label class="field-label">Fullt navn *</label><input type="text" id="f-name" placeholder="Fornavn Etternavn"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="two-col">
+        <div class="field-group"><label class="field-label">Opprinnelsesland</label><input type="text" id="f-country" placeholder="Land"></div>
+        <div class="field-group"><label class="field-label">Bosted</label><input type="text" id="f-residence" placeholder="By / Adresse"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="two-col">
+        <div class="field-group"><label class="field-label">Fødselsår</label><input type="number" id="f-birthyear" placeholder="F.eks. 1842"></div>
+        <div class="field-group"><label class="field-label">Fødselssted</label><input type="text" id="f-birthplace" placeholder="By / Land"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Yrke</label><select id="f-job"><option value="">– Ingen –</option></select></div>
+      <div class="field-group"><label class="field-label">Etasje</label><select id="f-floor"><option value="">– Ingen –</option></select></div>
+      <div class="field-group"><label class="field-label">Partner (valgfritt)</label><input type="text" id="f-partner" placeholder="Navn"></div>
+      <div class="field-group"><label class="field-label">Foreldre (valgfritt)</label><div class="tags-input-wrap" id="parents-wrap"><input type="text" id="f-parent-input" placeholder="Skriv og trykk Enter…"></div></div>
+      <div class="field-group"><label class="field-label">Barn (valgfritt)</label><div class="tags-input-wrap" id="children-wrap"><input type="text" id="f-child-input" placeholder="Skriv og trykk Enter…"></div></div>
+      <div class="field-group"><label class="field-label">Notater</label><textarea id="f-notes" placeholder="Karakterbeskrivelse, historikk…"></textarea></div>
+      <div class="actions-row">
+        <button class="btn btn-gold" onclick="savePerson()">Lagre</button>
+        <button class="btn" onclick="showList('persons')">Avbryt</button>
+        <button class="btn btn-danger" id="btn-delete-person" onclick="deletePerson()" style="margin-left:auto;display:none;">Slett</button>
+      </div>
+    </div>
+
+    <!-- PERSON DETAIL -->
+    <div id="view-person-detail" class="view">
+      <button class="back-btn" onclick="showList('persons')">← Tilbake</button>
+      <div class="person-num" id="d-num"></div>
+      <div class="person-name-display" id="d-name"></div>
+      <div id="d-fields"></div>
+      <div class="actions-row">
+        <button class="btn btn-gold" onclick="editCurrentPerson()">Rediger</button>
+        <button class="btn btn-danger" onclick="deletePerson()" style="margin-left:auto;">Slett</button>
+      </div>
+    </div>
+
+    <!-- JOBS LIST -->
+    <div id="view-jobs" class="view">
+      <div class="view-header">
+        <div class="view-title">Yrkesregister</div>
+        <button class="btn btn-gold" onclick="showJobForm()">+ Nytt yrke</button>
+      </div>
+      <div id="jobs-grid" class="grid"></div>
+    </div>
+
+    <!-- JOB FORM -->
+    <div id="view-job-detail" class="view">
+      <button class="back-btn" onclick="showList('jobs')">← Tilbake</button>
+      <div class="view-title" style="margin-bottom:18px;" id="jf-title">Nytt yrke</div>
+      <input type="hidden" id="jf-id">
+      <div class="field-group"><label class="field-label">Yrke *</label><input type="text" id="jf-name" placeholder="Yrkestittel"></div>
+      <div class="field-group"><label class="field-label">Beskrivelse</label><textarea id="jf-desc" placeholder="Hva innebærer dette yrket?"></textarea></div>
+      <div class="field-group"><label class="field-label">Notater</label><textarea id="jf-notes" placeholder="Tilleggsinfo…"></textarea></div>
+      <div class="actions-row">
+        <button class="btn btn-gold" onclick="saveJob()">Lagre</button>
+        <button class="btn" onclick="showList('jobs')">Avbryt</button>
+        <button class="btn btn-danger" id="btn-delete-job" onclick="deleteJob()" style="margin-left:auto;display:none;">Slett</button>
+      </div>
+    </div>
+
+    <!-- FLOORS LIST -->
+    <div id="view-floors" class="view">
+      <div class="view-header">
+        <div class="view-title">Etasjeregister</div>
+        <button class="btn btn-gold" onclick="showFloorForm()">+ Ny etasje</button>
+      </div>
+      <div id="floors-grid" class="grid"></div>
+    </div>
+
+    <!-- FLOOR FORM -->
+    <div id="view-floor-detail" class="view">
+      <button class="back-btn" onclick="showList('floors')">← Tilbake</button>
+      <div class="view-title" style="margin-bottom:18px;" id="ff-title">Ny etasje</div>
+      <input type="hidden" id="ff-id">
+      <div style="display:grid;grid-template-columns:80px 1fr;gap:12px;">
+        <div class="field-group"><label class="field-label">Nr.</label><input type="text" id="ff-num" placeholder="3"></div>
+        <div class="field-group"><label class="field-label">Navn *</label><input type="text" id="ff-name" placeholder="Etasjenavn"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Beskrivelse</label><textarea id="ff-desc" placeholder="Hva skjer på denne etasjen?"></textarea></div>
+      <div class="field-group"><label class="field-label">Notater</label><textarea id="ff-notes" placeholder="Tilleggsinfo…"></textarea></div>
+      <div class="actions-row">
+        <button class="btn btn-gold" onclick="saveFloor()">Lagre</button>
+        <button class="btn" onclick="showList('floors')">Avbryt</button>
+        <button class="btn btn-danger" id="btn-delete-floor" onclick="deleteFloor()" style="margin-left:auto;display:none;">Slett</button>
+      </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div id="view-timeline" class="view">
+      <div class="view-header">
+        <div class="view-title">Tidslinje</div>
+        <button class="btn btn-gold" onclick="showNewEventForm()">+ Ny</button>
+      </div>
+      <div class="search-wrap"><input type="text" id="tl-search" placeholder="Søk…" oninput="renderTimeline()"></div>
+      <div class="timeline-wrap">
+        <div class="tl-line"></div>
+        <div id="tl-entries"></div>
+      </div>
+    </div>
+
+    <!-- EVENT FORM -->
+    <div id="view-event-form" class="view">
+      <button class="back-btn" onclick="showList('timeline')">← Tilbake</button>
+      <div class="view-title" style="margin-bottom:18px;" id="ef-title">Ny hendelse</div>
+      <input type="hidden" id="ef-id">
+      <div class="field-group"><label class="field-label">Tittel *</label><input type="text" id="ef-name" placeholder="Hva skjedde?"></div>
+      <div class="field-group"><label class="field-label">Knyttet til person</label><select id="ef-person"><option value="">– Ingen –</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:10px;">
+        <div class="field-group"><label class="field-label">År *</label><input type="number" id="ef-year" placeholder="1842"></div>
+        <div class="field-group"><label class="field-label">Måned</label>
+          <select id="ef-month">
+            <option value="">–</option>
+            <option>Januar</option><option>Februar</option><option>Mars</option><option>April</option>
+            <option>Mai</option><option>Juni</option><option>Juli</option><option>August</option>
+            <option>September</option><option>Oktober</option><option>November</option><option>Desember</option>
+          </select>
+        </div>
+        <div class="field-group"><label class="field-label">Dag</label><input type="number" id="ef-day" placeholder="–" min="1" max="31"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Sted</label><input type="text" id="ef-place" placeholder="By, land, sted…"></div>
+      <div class="field-group"><label class="field-label">Beskrivelse</label><textarea id="ef-desc" placeholder="Hva skjedde?"></textarea></div>
+      <div class="actions-row">
+        <button class="btn btn-gold" onclick="saveEvent()">Lagre</button>
+        <button class="btn" onclick="showList('timeline')">Avbryt</button>
+        <button class="btn btn-danger" id="ef-del" onclick="deleteEvent()" style="margin-left:auto;display:none;">Slett</button>
+      </div>
+    </div>
+
+  </div><!-- /#main -->
+
+  <!-- Mobile bottom tab bar -->
+  <div id="bottombar">
+    <button class="tab-item active" data-tab="persons" onclick="showList('persons')">
+      <span class="tab-icon">👤</span><span>Personer</span>
+    </button>
+    <button class="tab-item" data-tab="jobs" onclick="showList('jobs')">
+      <span class="tab-icon">⚒</span><span>Yrker</span>
+    </button>
+    <button class="tab-item" data-tab="floors" onclick="showList('floors')">
+      <span class="tab-icon">🏢</span><span>Etasjer</span>
+    </button>
+    <button class="tab-item" data-tab="timeline" onclick="showList('timeline')">
+      <span class="tab-icon">📅</span><span>Tidslinje</span>
+    </button>
+  </div>
+
+</div><!-- /#app -->
+
+<script>
+const LS = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+};
+
+let persons=[], jobs=[], floors=[], events=[];
+let currentPersonId=null, currentJobId=null, currentFloorId=null, currentEventId=null;
+let parentTags=[], childTags=[];
+const MONTHS=['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
+
+function loadAll() {
+  persons = LS.get('arken-persons') || [];
+  jobs    = LS.get('arken-jobs')    || [];
+  floors  = LS.get('arken-floors')  || [];
+  events  = LS.get('arken-events')  || [];
+  syncBirthEvents();
+  updateBadges();
+  renderPersonsList();
+}
+
+function savePersons() { LS.set('arken-persons', persons); updateBadges(); }
+function saveJobs()    { LS.set('arken-jobs', jobs);       updateBadges(); }
+function saveFloors()  { LS.set('arken-floors', floors);   updateBadges(); }
+function saveEvents()  { LS.set('arken-events', events);   updateBadges(); }
+
+function updateBadges() {
+  document.getElementById('badge-persons').textContent = persons.length;
+  document.getElementById('badge-jobs').textContent    = jobs.length;
+  document.getElementById('badge-floors').textContent  = floors.length;
+  document.getElementById('badge-tl').textContent      = events.length;
+}
+
+function syncBirthEvents() {
+  persons.forEach(p => {
+    if (!p.birthYear) return;
+    if (!events.find(e => e.personId===p.id && e.type==='birth'))
+      events.push({id:'birth-'+p.id, type:'birth', name:'Fødsel: '+p.name, personId:p.id, year:parseInt(p.birthYear), month:'', day:0, place:p.birthPlace||p.country||'', desc:''});
+  });
+  saveEvents();
+}
+function upsertBirthEvent(p) {
+  events = events.filter(e => !(e.type==='birth' && e.personId===p.id));
+  if (p.birthYear) events.push({id:'birth-'+p.id, type:'birth', name:'Fødsel: '+p.name, personId:p.id, year:parseInt(p.birthYear), month:'', day:0, place:p.birthPlace||p.country||'', desc:''});
+  saveEvents();
+}
+function removeBirthEvent(pid) { events = events.filter(e => !(e.type==='birth' && e.personId===pid)); saveEvents(); }
+
+function uuid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+function pad(n) { return '#'+String(n).padStart(3,'0'); }
+function nextNum() { return persons.length ? Math.max(...persons.map(p=>p.num))+1 : 1; }
+
+function setActiveNav(name) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const el = document.querySelector('.nav-item[data-view="'+name+'"]');
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  const tab = document.querySelector('.tab-item[data-tab="'+name+'"]');
+  if (tab) tab.classList.add('active');
+}
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.getElementById('main').scrollTop = 0;
+}
+
+function showList(type) {
+  setActiveNav(type); showView(type);
+  if (type==='persons')  renderPersonsList();
+  if (type==='jobs')     renderJobsList();
+  if (type==='floors')   renderFloorsList();
+  if (type==='timeline') renderTimeline();
+}
+
+// --- PERSONS ---
+function renderPersonsList() {
+  const q = (document.getElementById('search-persons').value||'').toLowerCase();
+  let list = [...persons].sort((a,b)=>a.name.localeCompare(b.name,'no'));
+  if (q) list = list.filter(p=>p.name.toLowerCase().includes(q));
+  const g = document.getElementById('persons-grid');
+  if (!list.length) { g.innerHTML='<div class="empty-state">Ingen personer ennå</div>'; return; }
+  g.innerHTML = list.map(p=>`<div class="card" onclick="showPersonDetail('${p.id}')">
+    <div class="card-num">${pad(p.num)}</div>
+    <div class="card-name">${p.name}</div>
+    <div class="card-sub">${p.birthYear?p.birthYear+' · ':''}${p.job||p.country||'—'}</div>
+  </div>`).join('');
+}
+
+function showPersonForm(id) {
+  currentPersonId = id||null;
+  setActiveNav('persons'); showView('person-form');
+  populateJobSelect(); populateFloorSelect();
+  parentTags=[]; childTags=[];
+  const del = document.getElementById('btn-delete-person');
+  if (id) {
+    const p = persons.find(x=>x.id===id);
+    document.getElementById('form-title').textContent='Rediger person';
+    document.getElementById('f-id').value=p.id;
+    document.getElementById('f-name').value=p.name;
+    document.getElementById('f-country').value=p.country||'';
+    document.getElementById('f-residence').value=p.residence||'';
+    document.getElementById('f-birthyear').value=p.birthYear||'';
+    document.getElementById('f-birthplace').value=p.birthPlace||'';
+    document.getElementById('f-job').value=p.job||'';
+    document.getElementById('f-floor').value=p.floor||'';
+    document.getElementById('f-partner').value=p.partner||'';
+    document.getElementById('f-notes').value=p.notes||'';
+    parentTags=p.parents?[...p.parents]:[];
+    childTags=p.children?[...p.children]:[];
+    del.style.display='inline-block';
+  } else {
+    document.getElementById('form-title').textContent='Ny person';
+    ['f-name','f-country','f-residence','f-partner','f-notes','f-birthplace'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('f-birthyear').value='';
+    document.getElementById('f-job').value='';
+    document.getElementById('f-floor').value='';
+    del.style.display='none';
+  }
+  renderTagsUI();
+}
+
+function populateJobSelect() {
+  document.getElementById('f-job').innerHTML='<option value="">– Ingen –</option>'+jobs.sort((a,b)=>a.name.localeCompare(b.name,'no')).map(j=>`<option value="${j.name}">${j.name}</option>`).join('');
+}
+function populateFloorSelect() {
+  document.getElementById('f-floor').innerHTML='<option value="">– Ingen –</option>'+floors.sort((a,b)=>(parseInt(a.num)||0)-(parseInt(b.num)||0)).map(f=>`<option value="${f.name}">${f.num?'Etasje '+f.num+': ':''}${f.name}</option>`).join('');
+}
+
+function renderTagsUI() {
+  renderTags('parents-wrap','f-parent-input',parentTags,'parent');
+  renderTags('children-wrap','f-child-input',childTags,'child');
+}
+function renderTags(wrapId, inputId, arr, type) {
+  const wrap=document.getElementById(wrapId);
+  wrap.innerHTML='';
+  arr.forEach((t,i)=>{
+    const pill=document.createElement('span');
+    pill.className='tag-pill';
+    pill.innerHTML=`${t}<button class="tag-remove" onclick="removeTag('${type}',${i})">×</button>`;
+    wrap.appendChild(pill);
+  });
+  const inp=document.createElement('input');
+  inp.type='text'; inp.id=inputId; inp.placeholder='Skriv og trykk Enter…';
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&inp.value.trim()){e.preventDefault();(type==='parent'?parentTags:childTags).push(inp.value.trim());renderTagsUI();}
+    if(e.key==='Backspace'&&!inp.value&&arr.length){(type==='parent'?parentTags:childTags).pop();renderTagsUI();}
+  });
+  wrap.appendChild(inp);
+  wrap.onclick=()=>inp.focus();
+}
+function removeTag(type,i){(type==='parent'?parentTags:childTags).splice(i,1);renderTagsUI();}
+
+function savePerson() {
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){document.getElementById('f-name').focus();return;}
+  const id=currentPersonId||uuid();
+  const existing=persons.find(p=>p.id===id);
+  const p={id, num:existing?existing.num:nextNum(), name,
+    country:document.getElementById('f-country').value.trim(),
+    residence:document.getElementById('f-residence').value.trim(),
+    birthYear:document.getElementById('f-birthyear').value.trim(),
+    birthPlace:document.getElementById('f-birthplace').value.trim(),
+    job:document.getElementById('f-job').value,
+    floor:document.getElementById('f-floor').value,
+    partner:document.getElementById('f-partner').value.trim(),
+    parents:[...parentTags], children:[...childTags],
+    notes:document.getElementById('f-notes').value.trim()
+  };
+  if(existing)Object.assign(existing,p); else persons.push(p);
+  savePersons(); upsertBirthEvent(p); showPersonDetail(id);
+}
+
+function showPersonDetail(id) {
+  currentPersonId=id;
+  const p=persons.find(x=>x.id===id);
+  setActiveNav('persons'); showView('person-detail');
+  document.getElementById('d-num').textContent=pad(p.num);
+  document.getElementById('d-name').textContent=p.name;
+  const fields=[
+    ['Fødselsår', p.birthYear?(p.birthYear+(p.birthPlace?' · '+p.birthPlace:'')):null],
+    ['Opprinnelsesland',p.country],['Bosted',p.residence],
+    ['Yrke',p.job],['Etasje',p.floor],['Partner',p.partner],
+    ['Foreldre',p.parents&&p.parents.length?p.parents.map(t=>`<span class="pill">${t}</span>`).join(''):null],
+    ['Barn',p.children&&p.children.length?p.children.map(t=>`<span class="pill">${t}</span>`).join(''):null],
+    ['Notater',p.notes]
+  ].filter(([,v])=>v);
+  document.getElementById('d-fields').innerHTML=fields.map(([k,v])=>`
+    <div class="info-pair"><div class="info-key">${k}</div><div class="info-val">${v}</div></div>`).join('');
+}
+function editCurrentPerson(){showPersonForm(currentPersonId);}
+function deletePerson(){
+  if(!currentPersonId)return;
+  removeBirthEvent(currentPersonId);
+  persons=persons.filter(p=>p.id!==currentPersonId);
+  savePersons(); showList('persons');
+}
+
+// --- JOBS ---
+function renderJobsList(){
+  const g=document.getElementById('jobs-grid');
+  const list=[...jobs].sort((a,b)=>a.name.localeCompare(b.name,'no'));
+  if(!list.length){g.innerHTML='<div class="empty-state">Ingen yrker ennå</div>';return;}
+  g.innerHTML=list.map(j=>{const c=persons.filter(p=>p.job===j.name).length;
+    return`<div class="card" onclick="showJobForm('${j.id}')"><div class="card-name">${j.name}</div><div class="card-sub">${c} person${c!==1?'er':''}</div></div>`;
+  }).join('');
+}
+function showJobForm(id){
+  currentJobId=id||null; setActiveNav('jobs'); showView('job-detail');
+  const del=document.getElementById('btn-delete-job');
+  document.getElementById('jf-title').textContent=id?'Rediger yrke':'Nytt yrke';
+  if(id){const j=jobs.find(x=>x.id===id);document.getElementById('jf-id').value=j.id;document.getElementById('jf-name').value=j.name;document.getElementById('jf-desc').value=j.desc||'';document.getElementById('jf-notes').value=j.notes||'';del.style.display='inline-block';}
+  else{['jf-name','jf-desc','jf-notes'].forEach(i=>document.getElementById(i).value='');del.style.display='none';}
+}
+function saveJob(){
+  const name=document.getElementById('jf-name').value.trim();if(!name)return;
+  const id=currentJobId||uuid();const existing=jobs.find(j=>j.id===id);
+  const obj={id,name,desc:document.getElementById('jf-desc').value.trim(),notes:document.getElementById('jf-notes').value.trim()};
+  if(existing)Object.assign(existing,obj);else jobs.push(obj);
+  saveJobs();showList('jobs');
+}
+function deleteJob(){jobs=jobs.filter(j=>j.id!==currentJobId);saveJobs();showList('jobs');}
+
+// --- FLOORS ---
+function renderFloorsList(){
+  const g=document.getElementById('floors-grid');
+  const list=[...floors].sort((a,b)=>(parseInt(a.num)||0)-(parseInt(b.num)||0));
+  if(!list.length){g.innerHTML='<div class="empty-state">Ingen etasjer ennå</div>';return;}
+  g.innerHTML=list.map(f=>{const c=persons.filter(p=>p.floor===f.name).length;
+    return`<div class="card" onclick="showFloorForm('${f.id}')">${f.num?`<div class="card-num">Etasje ${f.num}</div>`:''}<div class="card-name">${f.name}</div><div class="card-sub">${c} person${c!==1?'er':''}</div></div>`;
+  }).join('');
+}
+function showFloorForm(id){
+  currentFloorId=id||null;setActiveNav('floors');showView('floor-detail');
+  const del=document.getElementById('btn-delete-floor');
+  document.getElementById('ff-title').textContent=id?'Rediger etasje':'Ny etasje';
+  if(id){const f=floors.find(x=>x.id===id);document.getElementById('ff-id').value=f.id;document.getElementById('ff-num').value=f.num||'';document.getElementById('ff-name').value=f.name;document.getElementById('ff-desc').value=f.desc||'';document.getElementById('ff-notes').value=f.notes||'';del.style.display='inline-block';}
+  else{['ff-num','ff-name','ff-desc','ff-notes'].forEach(i=>document.getElementById(i).value='');del.style.display='none';}
+}
+function saveFloor(){
+  const name=document.getElementById('ff-name').value.trim();if(!name)return;
+  const id=currentFloorId||uuid();const existing=floors.find(f=>f.id===id);
+  const obj={id,num:document.getElementById('ff-num').value.trim(),name,desc:document.getElementById('ff-desc').value.trim(),notes:document.getElementById('ff-notes').value.trim()};
+  if(existing)Object.assign(existing,obj);else floors.push(obj);
+  saveFloors();showList('floors');
+}
+function deleteFloor(){floors=floors.filter(f=>f.id!==currentFloorId);saveFloors();showList('floors');}
+
+// --- TIMELINE ---
+function renderTimeline(){
+  const q=(document.getElementById('tl-search')||{}).value||'';
+  let list=[...events];
+  if(q)list=list.filter(e=>(e.name+e.desc+e.place+getPersonName(e.personId)).toLowerCase().includes(q.toLowerCase()));
+  list.sort((a,b)=>{if(a.year!==b.year)return a.year-b.year;const am=MONTHS.indexOf(a.month),bm=MONTHS.indexOf(b.month);if(am!==bm)return am-bm;return(a.day||0)-(b.day||0);});
+  const container=document.getElementById('tl-entries');
+  if(!list.length){container.innerHTML='<div class="empty-state">Ingen hendelser ennå.<br>Klikk «+ Ny» for å starte.</div>';return;}
+  let lastYear=null,html='';
+  list.forEach(ev=>{
+    if(ev.year!==lastYear){if(lastYear!==null)html+='</div>';html+=`<div class="tl-year-block"><div class="tl-year-label">${ev.year}</div>`;lastYear=ev.year;}
+    const pname=getPersonName(ev.personId);
+    const parts=[ev.day>0?ev.day:'',ev.month].filter(Boolean);
+    const metaParts=[pname,ev.place].filter(Boolean);
+    html+=`<div class="tl-entry">
+      <div class="tl-date-col">${parts.length?parts.join('. '):''}</div>
+      <div class="tl-dot-col"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-name">${ev.name}</div>
+        ${metaParts.length?`<div class="tl-meta">${metaParts.join(' · ')}</div>`:''}
+        ${ev.desc?`<div class="tl-desc">${ev.desc}</div>`:''}
+        <button class="tl-edit" onclick="showEventForm('${ev.id}')">rediger</button>
+      </div></div>`;
+  });
+  if(lastYear!==null)html+='</div>';
+  container.innerHTML=html;
+}
+function getPersonName(id){if(!id)return'';const p=persons.find(x=>x.id===id);return p?p.name:'';}
+function showNewEventForm(){showEventForm(null);}
+function showEventForm(id){
+  currentEventId=id||null;
+  populateEventPersonSelect();
+  document.getElementById('ef-title').textContent=id?'Rediger hendelse':'Ny hendelse';
+  const del=document.getElementById('ef-del');
+  if(id){
+    const ev=events.find(e=>e.id===id);
+    document.getElementById('ef-id').value=ev.id;
+    document.getElementById('ef-name').value=ev.name;
+    document.getElementById('ef-person').value=ev.personId||'';
+    document.getElementById('ef-year').value=ev.year||'';
+    document.getElementById('ef-month').value=ev.month||'';
+    document.getElementById('ef-day').value=ev.day||'';
+    document.getElementById('ef-place').value=ev.place||'';
+    document.getElementById('ef-desc').value=ev.desc||'';
+    del.style.display='inline-block';
+  } else {
+    ['ef-name','ef-place','ef-desc'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('ef-year').value='';document.getElementById('ef-day').value='';
+    document.getElementById('ef-month').value='';document.getElementById('ef-person').value='';
+    del.style.display='none';
+  }
+  setActiveNav('timeline');showView('event-form');
+}
+function populateEventPersonSelect(){
+  document.getElementById('ef-person').innerHTML='<option value="">– Ingen –</option>'+[...persons].sort((a,b)=>a.name.localeCompare(b.name,'no')).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+}
+function saveEvent(){
+  const year=parseInt(document.getElementById('ef-year').value);
+  const name=document.getElementById('ef-name').value.trim();
+  if(!name||!year){if(!name)document.getElementById('ef-name').focus();else document.getElementById('ef-year').focus();return;}
+  const id=currentEventId||uuid();
+  const existing=events.find(e=>e.id===id);
+  const obj={id,type:'event',name,personId:document.getElementById('ef-person').value||null,year,month:document.getElementById('ef-month').value,day:parseInt(document.getElementById('ef-day').value)||0,place:document.getElementById('ef-place').value.trim(),desc:document.getElementById('ef-desc').value.trim()};
+  if(existing)Object.assign(existing,obj);else events.push(obj);
+  saveEvents();showList('timeline');
+}
+function deleteEvent(){events=events.filter(e=>e.id!==currentEventId);saveEvents();showList('timeline');}
+
+// --- STARS ---
+function initStars(){
+  const c=document.getElementById('stars');
+  c.width=window.innerWidth;c.height=window.innerHeight;
+  const ctx=c.getContext('2d');
+  for(let i=0;i<180;i++){
+    ctx.beginPath();
+    ctx.arc(Math.random()*c.width,Math.random()*c.height,Math.random()*.9+.2,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${180+Math.random()*75},${180+Math.random()*75},255,${.15+Math.random()*.6})`;
+    ctx.fill();
+  }
+}
+window.addEventListener('resize',initStars);
+initStars();
+loadAll();
+</script>
+</body>
+</html>
