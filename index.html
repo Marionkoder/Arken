@@ -292,6 +292,8 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="nav-item active" data-view="persons" onclick="showList('persons')"><span>Personregister</span><span class="badge" id="badge-persons">0</span></div>
       <div class="nav-item" data-view="jobs" onclick="showList('jobs')"><span>Yrkesregister</span><span class="badge" id="badge-jobs">0</span></div>
       <div class="nav-item" data-view="floors" onclick="showList('floors')"><span>Etasjeregister</span><span class="badge" id="badge-floors">0</span></div>
+      <div class="nav-item" data-view="chapters" onclick="showList('chapters')"><span>Kapitler</span><span class="badge" id="badge-chapters">0</span></div>
+      <div class="nav-item" data-view="background" onclick="showList('background')"><span>Bakgrunn</span><span class="badge" id="badge-background">0</span></div>
     </div>
     <div class="nav-section">
       <div class="nav-section-title">Tidslinje</div>
@@ -444,21 +446,83 @@ textarea { resize: vertical; min-height: 80px; }
       </div>
     </div>
 
+
+    <!-- CHAPTERS LIST -->
+    <div id="view-chapters" class="view">
+      <div class="view-header">
+        <div class="view-title">Kapitler</div>
+        <button class="btn btn-gold" onclick="showChapterForm()">+ Nytt kapittel</button>
+      </div>
+      <div id="chapters-grid" class="grid"></div>
+    </div>
+
+    <!-- CHAPTER FORM -->
+    <div id="view-chapter-detail" class="view">
+      <button class="back-btn" onclick="showList('chapters')">← Tilbake</button>
+      <div class="view-title" style="margin-bottom:18px;" id="cf-title">Nytt kapittel</div>
+      <input type="hidden" id="cf-id">
+      <div style="display:grid;grid-template-columns:70px 1fr;gap:12px;">
+        <div class="field-group"><label class="field-label">Nr.</label><input type="number" id="cf-num" placeholder="1"></div>
+        <div class="field-group"><label class="field-label">Tittel *</label><input type="text" id="cf-name" placeholder="Kapitteltittel"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Sammendrag</label><textarea id="cf-summary" placeholder="Hva skjer i dette kapittelet?"></textarea></div>
+      <div class="field-group"><label class="field-label">Perspektiv / POV</label><input type="text" id="cf-pov" placeholder="Hvem ser vi handlingen gjennom?"></div>
+      <div class="field-group"><label class="field-label">Sted</label><input type="text" id="cf-place" placeholder="Hvor foregår det?"></div>
+      <div class="field-group"><label class="field-label">Notater</label><textarea id="cf-notes" placeholder="Løse tråder, ideer…"></textarea></div>
+      <div class="actions-row">
+        <button class="btn btn-gold" onclick="saveChapter()">Lagre</button>
+        <button class="btn" onclick="showList('chapters')">Avbryt</button>
+        <button class="btn btn-danger" id="btn-delete-chapter" onclick="deleteChapter()" style="margin-left:auto;display:none;">Slett</button>
+      </div>
+    </div>
+
+    <!-- BACKGROUND LIST -->
+    <div id="view-background" class="view">
+      <div class="view-header">
+        <div class="view-title">Bakgrunn</div>
+        <button class="btn btn-gold" onclick="showBackgroundForm()">+ Ny</button>
+      </div>
+      <div class="search-wrap"><input type="text" id="search-background" placeholder="Søk…" oninput="renderBackgroundList()"></div>
+      <div id="background-grid" class="grid"></div>
+    </div>
+
+    <!-- BACKGROUND FORM -->
+    <div id="view-background-detail" class="view">
+      <button class="back-btn" onclick="showList('background')">← Tilbake</button>
+      <div class="view-title" style="margin-bottom:18px;" id="bf-title">Ny bakgrunnsartikkel</div>
+      <input type="hidden" id="bf-id">
+      <div class="field-group"><label class="field-label">Tittel *</label><input type="text" id="bf-name" placeholder="F.eks. «Verdenshistorie», «Magi», «Geografi»"></div>
+      <div class="field-group"><label class="field-label">Kategori</label><input type="text" id="bf-category" placeholder="F.eks. Historie, Religion, Geografi…"></div>
+      <div class="field-group"><label class="field-label">Innhold</label><textarea id="bf-content" placeholder="Bakgrunnsinformasjon…" style="min-height:140px;"></textarea></div>
+      <div class="field-group"><label class="field-label">Notater</label><textarea id="bf-notes" placeholder="Tilleggsinfo, kilder, ideer…"></textarea></div>
+      <div class="actions-row">
+        <button class="btn btn-gold" onclick="saveBackground()">Lagre</button>
+        <button class="btn" onclick="showList('background')">Avbryt</button>
+        <button class="btn btn-danger" id="btn-delete-background" onclick="deleteBackground()" style="margin-left:auto;display:none;">Slett</button>
+      </div>
+    </div>
+
   </div><!-- /#main -->
 
   <!-- Mobile bottom tab bar -->
   <div id="bottombar">
     <button class="tab-item active" data-tab="persons" onclick="showList('persons')">
-      <span class="tab-icon">👤</span><span>Personer</span>
+      Personer
     </button>
     <button class="tab-item" data-tab="jobs" onclick="showList('jobs')">
-      <span class="tab-icon">⚒</span><span>Yrker</span>
+      Yrker
     </button>
     <button class="tab-item" data-tab="floors" onclick="showList('floors')">
-      <span class="tab-icon">🏢</span><span>Etasjer</span>
+      Etasjer
     </button>
     <button class="tab-item" data-tab="timeline" onclick="showList('timeline')">
-      <span class="tab-icon">📅</span><span>Tidslinje</span>
+      Tidslinje
+    </button>
+    <button class="tab-item" data-tab="chapters" onclick="showList('chapters')">
+      Kapitler
+    </button>
+    <button class="tab-item" data-tab="background" onclick="showList('background')">
+      Bakgrunn
     </button>
   </div>
 
@@ -470,16 +534,18 @@ const LS = {
   set(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 };
 
-let persons=[], jobs=[], floors=[], events=[];
-let currentPersonId=null, currentJobId=null, currentFloorId=null, currentEventId=null;
+let persons=[], jobs=[], floors=[], events=[], chapters=[], backgrounds=[];
+let currentPersonId=null, currentJobId=null, currentFloorId=null, currentEventId=null, currentChapterId=null, currentBackgroundId=null;
 let parentTags=[], childTags=[];
 const MONTHS=['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
 
 function loadAll() {
-  persons = LS.get('arken-persons') || [];
-  jobs    = LS.get('arken-jobs')    || [];
-  floors  = LS.get('arken-floors')  || [];
-  events  = LS.get('arken-events')  || [];
+  persons     = LS.get('arken-persons')     || [];
+  jobs        = LS.get('arken-jobs')        || [];
+  floors      = LS.get('arken-floors')      || [];
+  events      = LS.get('arken-events')      || [];
+  chapters    = LS.get('arken-chapters')    || [];
+  backgrounds = LS.get('arken-backgrounds') || [];
   syncBirthEvents();
   updateBadges();
   renderPersonsList();
@@ -487,14 +553,18 @@ function loadAll() {
 
 function savePersons() { LS.set('arken-persons', persons); updateBadges(); }
 function saveJobs()    { LS.set('arken-jobs', jobs);       updateBadges(); }
-function saveFloors()  { LS.set('arken-floors', floors);   updateBadges(); }
+function saveFloors()     { LS.set('arken-floors', floors);       updateBadges(); }
+function saveChapters()   { LS.set('arken-chapters', chapters);     updateBadges(); }
+function saveBackgrounds(){ LS.set('arken-backgrounds', backgrounds); updateBadges(); }
 function saveEvents()  { LS.set('arken-events', events);   updateBadges(); }
 
 function updateBadges() {
   document.getElementById('badge-persons').textContent = persons.length;
   document.getElementById('badge-jobs').textContent    = jobs.length;
   document.getElementById('badge-floors').textContent  = floors.length;
-  document.getElementById('badge-tl').textContent      = events.length;
+  document.getElementById('badge-tl').textContent        = events.length;
+  document.getElementById('badge-chapters').textContent  = chapters.length;
+  document.getElementById('badge-background').textContent = backgrounds.length;
 }
 
 function syncBirthEvents() {
@@ -533,10 +603,12 @@ function showView(id) {
 
 function showList(type) {
   setActiveNav(type); showView(type);
-  if (type==='persons')  renderPersonsList();
-  if (type==='jobs')     renderJobsList();
-  if (type==='floors')   renderFloorsList();
-  if (type==='timeline') renderTimeline();
+  if (type==='persons')    renderPersonsList();
+  if (type==='jobs')       renderJobsList();
+  if (type==='floors')     renderFloorsList();
+  if (type==='timeline')   renderTimeline();
+  if (type==='chapters')   renderChaptersList();
+  if (type==='background') renderBackgroundList();
 }
 
 // --- PERSONS ---
@@ -779,6 +851,87 @@ function saveEvent(){
   saveEvents();showList('timeline');
 }
 function deleteEvent(){events=events.filter(e=>e.id!==currentEventId);saveEvents();showList('timeline');}
+
+
+// --- CHAPTERS ---
+function renderChaptersList(){
+  const g=document.getElementById('chapters-grid');
+  const list=[...chapters].sort((a,b)=>(parseInt(a.num)||0)-(parseInt(b.num)||0));
+  if(!list.length){g.innerHTML='<div class="empty-state">Ingen kapitler ennå</div>';return;}
+  g.innerHTML=list.map(c=>`<div class="card" onclick="showChapterForm('${c.id}')">
+    ${c.num?`<div class="card-num">Kapittel ${c.num}</div>`:''}
+    <div class="card-name">${c.name}</div>
+    <div class="card-sub">${c.pov||c.place||'—'}</div>
+  </div>`).join('');
+}
+function showChapterForm(id){
+  currentChapterId=id||null; setActiveNav('chapters'); showView('chapter-detail');
+  const del=document.getElementById('btn-delete-chapter');
+  document.getElementById('cf-title').textContent=id?'Rediger kapittel':'Nytt kapittel';
+  if(id){
+    const c=chapters.find(x=>x.id===id);
+    document.getElementById('cf-id').value=c.id;
+    document.getElementById('cf-num').value=c.num||'';
+    document.getElementById('cf-name').value=c.name;
+    document.getElementById('cf-summary').value=c.summary||'';
+    document.getElementById('cf-pov').value=c.pov||'';
+    document.getElementById('cf-place').value=c.place||'';
+    document.getElementById('cf-notes').value=c.notes||'';
+    del.style.display='inline-block';
+  } else {
+    ['cf-num','cf-name','cf-summary','cf-pov','cf-place','cf-notes'].forEach(i=>document.getElementById(i).value='');
+    del.style.display='none';
+  }
+}
+function saveChapter(){
+  const name=document.getElementById('cf-name').value.trim();if(!name)return;
+  const id=currentChapterId||uuid();
+  const existing=chapters.find(c=>c.id===id);
+  const obj={id,num:document.getElementById('cf-num').value.trim(),name,summary:document.getElementById('cf-summary').value.trim(),pov:document.getElementById('cf-pov').value.trim(),place:document.getElementById('cf-place').value.trim(),notes:document.getElementById('cf-notes').value.trim()};
+  if(existing)Object.assign(existing,obj);else chapters.push(obj);
+  saveChapters();showList('chapters');
+}
+function deleteChapter(){chapters=chapters.filter(c=>c.id!==currentChapterId);saveChapters();showList('chapters');}
+
+// --- BACKGROUND ---
+function renderBackgroundList(){
+  const q=(document.getElementById('search-background')||{}).value||'';
+  let list=[...backgrounds].sort((a,b)=>a.name.localeCompare(b.name,'no'));
+  if(q)list=list.filter(b=>(b.name+b.category+b.content).toLowerCase().includes(q.toLowerCase()));
+  const g=document.getElementById('background-grid');
+  if(!list.length){g.innerHTML='<div class="empty-state">Ingen bakgrunnsartikler ennå</div>';return;}
+  g.innerHTML=list.map(b=>`<div class="card" onclick="showBackgroundForm('${b.id}')">
+    ${b.category?`<div class="card-num">${b.category}</div>`:''}
+    <div class="card-name">${b.name}</div>
+    <div class="card-sub">${b.content?b.content.slice(0,50)+'…':''}</div>
+  </div>`).join('');
+}
+function showBackgroundForm(id){
+  currentBackgroundId=id||null; setActiveNav('background'); showView('background-detail');
+  const del=document.getElementById('btn-delete-background');
+  document.getElementById('bf-title').textContent=id?'Rediger artikkel':'Ny bakgrunnsartikkel';
+  if(id){
+    const b=backgrounds.find(x=>x.id===id);
+    document.getElementById('bf-id').value=b.id;
+    document.getElementById('bf-name').value=b.name;
+    document.getElementById('bf-category').value=b.category||'';
+    document.getElementById('bf-content').value=b.content||'';
+    document.getElementById('bf-notes').value=b.notes||'';
+    del.style.display='inline-block';
+  } else {
+    ['bf-name','bf-category','bf-content','bf-notes'].forEach(i=>document.getElementById(i).value='');
+    del.style.display='none';
+  }
+}
+function saveBackground(){
+  const name=document.getElementById('bf-name').value.trim();if(!name)return;
+  const id=currentBackgroundId||uuid();
+  const existing=backgrounds.find(b=>b.id===id);
+  const obj={id,name,category:document.getElementById('bf-category').value.trim(),content:document.getElementById('bf-content').value.trim(),notes:document.getElementById('bf-notes').value.trim()};
+  if(existing)Object.assign(existing,obj);else backgrounds.push(obj);
+  saveBackgrounds();showList('background');
+}
+function deleteBackground(){backgrounds=backgrounds.filter(b=>b.id!==currentBackgroundId);saveBackgrounds();showList('background');}
 
 // --- STARS ---
 function initStars(){
